@@ -222,10 +222,8 @@ object SparkEnv extends Logging {
     }
 
     val tachyonAddress = conf.get("spark.tachyon.address")
-    val tachyonSerializerClass =
-      conf.get("spark.tachyon.serializer", "org.apache.spark.serializer.JavaSerializer")
-    val tachyonSerializer =
-      Class.forName(tachyonSerializerClass).newInstance().asInstanceOf[Serializer]
+    val tachyonSerializer = serializerManager.setDefault(
+      conf.get("spark.tachyon.serializer", "org.apache.spark.serializer.JavaSerializer"), conf)
     var tachyonFS: TachyonFS = null
     if (tachyonAddress != null) {
       tachyonFS = TachyonFS.get(tachyonAddress)
