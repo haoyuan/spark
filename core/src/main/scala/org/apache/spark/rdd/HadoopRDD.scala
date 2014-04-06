@@ -64,12 +64,15 @@ private[spark] class HadoopPartition(rddId: Int, idx: Int, @transient s: InputSp
 class HadoopRDD[K, V](
     sc: SparkContext,
 //    broadcastedConf: Broadcast[SerializableWritable[Configuration]],
+    @transient conf: JobConf,
     initLocalJobConfFuncOpt: Option[JobConf => Unit],
     inputFormatClass: Class[_ <: InputFormat[K, V]],
     keyClass: Class[K],
     valueClass: Class[V],
     minSplits: Int)
   extends RDD[(K, V)](sc, Nil) with Logging {
+
+  log.info("We are in HadoopRDD.")
 
   def this(
       sc: SparkContext,
@@ -82,6 +85,7 @@ class HadoopRDD[K, V](
       sc,
 //      sc.broadcast(new SerializableWritable(conf))
 //        .asInstanceOf[Broadcast[SerializableWritable[Configuration]]],
+      conf,
       None /* initLocalJobConfFuncOpt */,
       inputFormatClass,
       keyClass,
@@ -109,7 +113,7 @@ class HadoopRDD[K, V](
       // Create a JobConf that will be cached and used across this RDD's getJobConf() calls in the
       // local process. The local cache is accessed through HadoopRDD.putCachedMetadata().
       // The caching helps minimize GC, since a JobConf can contain ~10KB of temporary objects.
-      val newJobConf = new JobConf(broadcastedConf.value.value)
+      val newJobConf = new JobConf(conf) //broadcastedConf.value.value)
       initLocalJobConfFuncOpt.map(f => f(newJobConf))
       HadoopRDD.putCachedMetadata(jobConfCacheKey, newJobConf)
       newJobConf
@@ -191,8 +195,8 @@ class HadoopRDD[K, V](
     if (System.getProperty("spark.tachyon.recompute", "false").toBoolean) {
       val env = SparkEnv.get
       val conf = newConf.value
-      env.hadoop.addCredentials(conf)
-      val inputFormat = createInputFormat(conf)
+//      env.hadoopJobMetadata.addCredentials(conf)
+      val inputFormat = getInputFormat(conf)
       if (inputFormat.isInstanceOf[Configurable]) {
         inputFormat.asInstanceOf[Configurable].setConf(conf)
       }

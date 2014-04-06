@@ -391,7 +391,8 @@ class SparkContext(
     val setInputPathsFunc = (jobConf: JobConf) => FileInputFormat.setInputPaths(jobConf, path)
     new HadoopRDD(
       this,
-      confBroadcast,
+//      confBroadcast,
+      new JobConf(hadoopConfiguration),
       Some(setInputPathsFunc),
       inputFormatClass,
       keyClass,
