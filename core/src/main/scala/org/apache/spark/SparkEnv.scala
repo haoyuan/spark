@@ -32,6 +32,9 @@ import org.apache.spark.api.python.PythonWorkerFactory
 
 import com.google.common.collect.MapMaker
 
+import tachyon.client.TachyonFS
+
+
 /**
  * Holds all the runtime environment objects for a running Spark instance (either master or worker),
  * including the serializer, Akka actor system, block manager, map output tracker, etc. Currently
@@ -54,7 +57,9 @@ class SparkEnv private[spark] (
     val httpFileServer: HttpFileServer,
     val sparkFilesDir: String,
     val metricsSystem: MetricsSystem,
-    val conf: SparkConf) extends Logging {
+    val conf: SparkConf,
+    val tachyonSerializer: Serializer,
+    val tachyonFS: TachyonFS) extends Logging {
 
   // A mapping of thread ID to amount of memory used for shuffle in bytes
   // All accesses should be manually synchronized
@@ -216,6 +221,17 @@ object SparkEnv extends Logging {
         "levels using the RDD.persist() method instead.")
     }
 
+    val tachyonAddress = conf.get("spark.tachyon.address")
+    val tachyonSerializerClass =
+      conf.get("spark.tachyon.serializer", "org.apache.spark.serializer.JavaSerializer")
+    val tachyonSerializer =
+      Class.forName(tachyonSerializerClass).newInstance().asInstanceOf[Serializer]
+    var tachyonFS: TachyonFS = null
+    if (tachyonAddress != null) {
+      tachyonFS = TachyonFS.get(tachyonAddress)
+      logWarning("TachyonClient has connected to " + tachyonAddress)
+    }
+
     new SparkEnv(
       executorId,
       actorSystem,
@@ -231,6 +247,8 @@ object SparkEnv extends Logging {
       httpFileServer,
       sparkFilesDir,
       metricsSystem,
-      conf)
+      conf,
+      tachyonSerializer,
+      tachyonFS)
   }
 }
