@@ -48,20 +48,21 @@ object SparkBuild extends Build {
   lazy val core = Project("core", file("core"), settings = coreSettings)
 
   lazy val repl = Project("repl", file("repl"), settings = replSettings)
-    .dependsOn(core, graphx, bagel, mllib)
+    .dependsOn(core, bagel)
 
-  lazy val tools = Project("tools", file("tools"), settings = toolsSettings) dependsOn(core) dependsOn(streaming)
+  lazy val tools = Project("tools", file("tools"), settings = toolsSettings) dependsOn(core)
 
   lazy val bagel = Project("bagel", file("bagel"), settings = bagelSettings) dependsOn(core)
 
-  lazy val graphx = Project("graphx", file("graphx"), settings = graphxSettings) dependsOn(core)
+  // lazy val graphx = Project("graphx", file("graphx"), settings = graphxSettings) dependsOn(core)
 
-  lazy val streaming = Project("streaming", file("streaming"), settings = streamingSettings) dependsOn(core)
+  // lazy val streaming = Project("streaming", file("streaming"), settings = streamingSettings) dependsOn(core)
 
-  lazy val mllib = Project("mllib", file("mllib"), settings = mllibSettings) dependsOn(core)
+  // lazy val mllib = Project("mllib", file("mllib"), settings = mllibSettings) dependsOn(core)
 
   lazy val assemblyProj = Project("assembly", file("assembly"), settings = assemblyProjSettings)
-    .dependsOn(core, graphx, bagel, mllib, repl, streaming) dependsOn(maybeYarn: _*) dependsOn(maybeGanglia: _*)
+    .dependsOn(core, bagel, repl) dependsOn(maybeYarn: _*) dependsOn(maybeGanglia: _*)
+    // .dependsOn(core, graphx, bagel, mllib, repl, streaming) dependsOn(maybeYarn: _*) dependsOn(maybeGanglia: _*)
 
   lazy val assembleDeps = TaskKey[Unit]("assemble-deps", "Build assembly of dependencies and packages Spark projects")
 
@@ -91,7 +92,7 @@ object SparkBuild extends Build {
     case Some(v) => v.toBoolean
   }
   lazy val hadoopClient = if (hadoopVersion.startsWith("0.20.") || hadoopVersion == "1.0.0") "hadoop-core" else "hadoop-client"
-  
+
   // Include Ganglia integration if the user has enabled Ganglia
   // This is isolated from the normal build due to LGPL-licensed code in the library
   lazy val isGangliaEnabled = Properties.envOrNone("SPARK_GANGLIA_LGPL").isDefined
@@ -106,31 +107,32 @@ object SparkBuild extends Build {
   lazy val maybeYarn: Seq[ClasspathDependency] = if (isYarnEnabled) Seq(if (isNewHadoop) yarn else yarnAlpha) else Seq()
   lazy val maybeYarnRef: Seq[ProjectReference] = if (isYarnEnabled) Seq(if (isNewHadoop) yarn else yarnAlpha) else Seq()
 
-  lazy val externalTwitter = Project("external-twitter", file("external/twitter"), settings = twitterSettings)
-    .dependsOn(streaming % "compile->compile;test->test")
+  // lazy val externalTwitter = Project("external-twitter", file("external/twitter"), settings = twitterSettings)
+  //   .dependsOn(streaming % "compile->compile;test->test")
 
-  lazy val externalKafka = Project("external-kafka", file("external/kafka"), settings = kafkaSettings)
-    .dependsOn(streaming % "compile->compile;test->test")
+  // lazy val externalKafka = Project("external-kafka", file("external/kafka"), settings = kafkaSettings)
+  //   .dependsOn(streaming % "compile->compile;test->test")
 
-  lazy val externalFlume = Project("external-flume", file("external/flume"), settings = flumeSettings)
-    .dependsOn(streaming % "compile->compile;test->test")
+  // lazy val externalFlume = Project("external-flume", file("external/flume"), settings = flumeSettings)
+  //   .dependsOn(streaming % "compile->compile;test->test")
 
-  lazy val externalZeromq = Project("external-zeromq", file("external/zeromq"), settings = zeromqSettings)
-    .dependsOn(streaming % "compile->compile;test->test")
+  // lazy val externalZeromq = Project("external-zeromq", file("external/zeromq"), settings = zeromqSettings)
+  //   .dependsOn(streaming % "compile->compile;test->test")
 
-  lazy val externalMqtt = Project("external-mqtt", file("external/mqtt"), settings = mqttSettings)
-    .dependsOn(streaming % "compile->compile;test->test")
+  // lazy val externalMqtt = Project("external-mqtt", file("external/mqtt"), settings = mqttSettings)
+  //   .dependsOn(streaming % "compile->compile;test->test")
 
-  lazy val allExternal = Seq[ClasspathDependency](externalTwitter, externalKafka, externalFlume, externalZeromq, externalMqtt)
-  lazy val allExternalRefs = Seq[ProjectReference](externalTwitter, externalKafka, externalFlume, externalZeromq, externalMqtt)
+  // lazy val allExternal = Seq[ClasspathDependency](externalTwitter, externalKafka, externalFlume, externalZeromq, externalMqtt)
+  // lazy val allExternalRefs = Seq[ProjectReference](externalTwitter, externalKafka, externalFlume, externalZeromq, externalMqtt)
 
   lazy val examples = Project("examples", file("examples"), settings = examplesSettings)
-    .dependsOn(core, mllib, graphx, bagel, streaming, externalTwitter) dependsOn(allExternal: _*)
+    .dependsOn(core, bagel)
+    // .dependsOn(core, mllib, graphx, bagel, streaming, externalTwitter) dependsOn(allExternal: _*)
 
   // Everything except assembly, tools and examples belong to packageProjects
-  lazy val packageProjects = Seq[ProjectReference](core, repl, bagel, streaming, mllib, graphx) ++ maybeYarnRef ++ maybeGangliaRef
+  lazy val packageProjects = Seq[ProjectReference](core, repl, bagel) ++ maybeYarnRef ++ maybeGangliaRef
 
-  lazy val allProjects = packageProjects ++ allExternalRefs ++ Seq[ProjectReference](examples, tools, assemblyProj)
+  lazy val allProjects = packageProjects ++ Seq[ProjectReference](examples, tools, assemblyProj)
 
   def sharedSettings = Defaults.defaultSettings ++ Seq(
     organization       := "org.apache.spark",
@@ -168,7 +170,8 @@ object SparkBuild extends Build {
 
     // For Sonatype publishing
     resolvers ++= Seq("sonatype-snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
-      "sonatype-staging" at "https://oss.sonatype.org/service/local/staging/deploy/maven2/"),
+      "sonatype-staging" at "https://oss.sonatype.org/service/local/staging/deploy/maven2/",
+      "Local Maven Repository" at Path.userHome.asFile.toURI.toURL + "/.m2/repository"),
 
     publishMavenStyle := true,
 
@@ -254,6 +257,10 @@ object SparkBuild extends Build {
   val excludeNetty = ExclusionRule(organization = "org.jboss.netty")
   val excludeAsm = ExclusionRule(organization = "asm")
   val excludeSnappy = ExclusionRule(organization = "org.xerial.snappy")
+  val excludeEclipseJetty = ExclusionRule(organization = "org.eclipse.jetty")
+  val excludeHadoop = ExclusionRule(organization = "org.apache.hadoop")
+  val excludeCurator = ExclusionRule(organization = "org.apache.curator")
+  val excludePowermock = ExclusionRule(organization = "org.powermock")
 
   def coreSettings = sharedSettings ++ Seq(
     name := "spark-core",
@@ -290,7 +297,8 @@ object SparkBuild extends Build {
         "com.codahale.metrics"     % "metrics-graphite" % "3.0.0",
         "com.twitter"             %% "chill"            % "0.3.1",
         "com.twitter"              % "chill-java"       % "0.3.1",
-        "com.clearspring.analytics" % "stream"          % "2.5.1"
+        "com.clearspring.analytics" % "stream"          % "2.5.1",
+        "org.tachyonproject"        % "tachyon"         % "0.5.0-SNAPSHOT" excludeAll(excludeHadoop, excludeCurator, excludeEclipseJetty, excludePowermock)
       )
   )
 
