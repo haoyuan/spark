@@ -369,7 +369,7 @@ class SparkContext(
       ): RDD[(K, V)] = {
     // Add necessary security credentials to the JobConf before broadcasting it.
     SparkHadoopUtil.get.addCredentials(conf)
-    new HadoopRDD(this, conf, inputFormatClass, keyClass, valueClass, minSplits)
+    new HadoopRDD(this, new SerializableWritable(conf), inputFormatClass, keyClass, valueClass, minSplits)
   }
 
   /** Get an RDD for a Hadoop file with an arbitrary InputFormat
@@ -387,12 +387,16 @@ class SparkContext(
       minSplits: Int = defaultMinSplits
       ): RDD[(K, V)] = {
     // A Hadoop configuration can be about 10 KB, which is pretty big, so broadcast it.
-    val confBroadcast = broadcast(new SerializableWritable(hadoopConfiguration))
-    val setInputPathsFunc = (jobConf: JobConf) => FileInputFormat.setInputPaths(jobConf, path)
+    // val confBroadcast = broadcast(new SerializableWritable(hadoopConfiguration))
+    log.info("File Path is " + path);
+    val setInputPathsFunc = (jobConf: JobConf) => {
+      log.info("Set the path " + path);
+      FileInputFormat.setInputPaths(jobConf, path)
+    }
     new HadoopRDD(
       this,
 //      confBroadcast,
-      new JobConf(hadoopConfiguration),
+      new SerializableWritable(hadoopConfiguration),
       Some(setInputPathsFunc),
       inputFormatClass,
       keyClass,
@@ -736,8 +740,8 @@ class SparkContext(
           // A JAR file which exists only on the driver node
           case null | "file" =>
             if (SparkHadoopUtil.get.isYarnMode() && master == "yarn-standalone") {
-              // In order for this to work in yarn standalone mode the user must specify the 
-              // --addjars option to the client to upload the file into the distributed cache 
+              // In order for this to work in yarn standalone mode the user must specify the
+              // --addjars option to the client to upload the file into the distributed cache
               // of the AM to make it show up in the current working directory.
               val fileName = new Path(uri.getPath).getName()
               try {
@@ -745,7 +749,7 @@ class SparkContext(
               } catch {
                 case e: Exception => {
                   // For now just log an error but allow to go through so spark examples work.
-                  // The spark examples don't really need the jar distributed since its also 
+                  // The spark examples don't really need the jar distributed since its also
                   // the app jar.
                   logError("Error adding jar (" + e + "), was the --addJars option used?")
                   null

@@ -64,7 +64,7 @@ private[spark] class HadoopPartition(rddId: Int, idx: Int, @transient s: InputSp
 class HadoopRDD[K, V](
     sc: SparkContext,
 //    broadcastedConf: Broadcast[SerializableWritable[Configuration]],
-    @transient conf: JobConf,
+    serConf: SerializableWritable[Configuration],
     initLocalJobConfFuncOpt: Option[JobConf => Unit],
     inputFormatClass: Class[_ <: InputFormat[K, V]],
     keyClass: Class[K],
@@ -76,7 +76,7 @@ class HadoopRDD[K, V](
 
   def this(
       sc: SparkContext,
-      conf: JobConf,
+      serConf: SerializableWritable[Configuration],
       inputFormatClass: Class[_ <: InputFormat[K, V]],
       keyClass: Class[K],
       valueClass: Class[V],
@@ -85,7 +85,7 @@ class HadoopRDD[K, V](
       sc,
 //      sc.broadcast(new SerializableWritable(conf))
 //        .asInstanceOf[Broadcast[SerializableWritable[Configuration]]],
-      conf,
+      serConf,
       None /* initLocalJobConfFuncOpt */,
       inputFormatClass,
       keyClass,
@@ -93,7 +93,7 @@ class HadoopRDD[K, V](
       minSplits)
   }
 
-  private val newConf = new SerializableWritable(conf)
+//  private val newConf = new SerializableWritable(conf)
 
   protected val jobConfCacheKey = "rdd_%d_job_conf".format(id)
 
@@ -101,7 +101,7 @@ class HadoopRDD[K, V](
 
   // Returns a JobConf that will be used on slaves to obtain input splits for Hadoop reads.
   protected def getJobConf(): JobConf = {
-    val conf: Configuration = newConf.value //broadcastedConf.value.value
+    val conf: Configuration = serConf.value //broadcastedConf.value.value
     if (conf.isInstanceOf[JobConf]) {
       // A user-broadcasted JobConf was provided to the HadoopRDD, so always use it.
       conf.asInstanceOf[JobConf]
@@ -143,6 +143,7 @@ class HadoopRDD[K, V](
     if (inputFormat.isInstanceOf[Configurable]) {
       inputFormat.asInstanceOf[Configurable].setConf(jobConf)
     }
+    log.info(jobConf.toString);
     val inputSplits = inputFormat.getSplits(jobConf, minSplits)
     val array = new Array[Partition](inputSplits.size)
     for (i <- 0 until inputSplits.size) {
@@ -193,9 +194,8 @@ class HadoopRDD[K, V](
 
     var tSplit = split
     if (System.getProperty("spark.tachyon.recompute", "false").toBoolean) {
-      val env = SparkEnv.get
-      val conf = newConf.value
-//      env.hadoopJobMetadata.addCredentials(conf)
+      val conf = new JobConf(serConf.value)
+      SparkHadoopUtil.get.addCredentials(conf)
       val inputFormat = getInputFormat(conf)
       if (inputFormat.isInstanceOf[Configurable]) {
         inputFormat.asInstanceOf[Configurable].setConf(conf)
