@@ -935,7 +935,7 @@ abstract class RDD[T: ClassTag](
       }
       val children = new ArrayList[java.lang.String]()
       //      val cmd = "/root/spark/run-example org.apache.spark.TachyonRecompute " + sc.master
-      val cmd = "/home/haoyuan/Tachyon/spark-tachyon/run-example org.apache.spark.TachyonRecompute " + sc.master
+      val cmd = "/home/haoyuan/Tachyon/spark/bin/run-example org.apache.spark.TachyonRecompute " + sc.master
 
       for (i <- 0 until partitions.size) {
         children.add(path.substring(path.find("19998") + 5) + "/part_" + i);

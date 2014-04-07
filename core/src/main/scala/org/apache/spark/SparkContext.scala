@@ -388,15 +388,15 @@ class SparkContext(
       ): RDD[(K, V)] = {
     // A Hadoop configuration can be about 10 KB, which is pretty big, so broadcast it.
     val confBroadcast = broadcast(new SerializableWritable(hadoopConfiguration))
-    log.info("File Path is " + path);
+//    log.info("File Path is " + path);
     val setInputPathsFunc = (jobConf: JobConf) => {
-      log.info("Set the path " + path);
+//      log.info("Set the path " + path);
       FileInputFormat.setInputPaths(jobConf, path)
     }
     new HadoopRDD(
       this,
-      confBroadcast,
-//      new SerializableWritable(hadoopConfiguration),
+//      confBroadcast,
+      new SerializableWritable(hadoopConfiguration),
       Some(setInputPathsFunc),
       inputFormatClass,
       keyClass,

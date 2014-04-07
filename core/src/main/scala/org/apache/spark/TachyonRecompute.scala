@@ -22,15 +22,13 @@ object TachyonRecompute {
     }
 
     val conf = new SparkConf()
-      .setMaster(args(0))
-      .setAppName("Recomputing dependency " + args(2))
       .set("spark.tachyon.address", args(1))
       .set("spark.tachyon.recompute", "true")
       .set("spark.cores.max", "84")
 
     val tachyonFS = TachyonFS.get(args(1))
     val dependency = tachyonFS.getClientDependencyInfo(args(2).toInt)
-    val sparkContext = new SparkContext(conf)
+    val sparkContext = new SparkContext(args(0), "Recomputing dependency " + args(2), conf)
 
     val WARMUP_NUM = 10
     val warm = sparkContext.parallelize(1 to WARMUP_NUM, WARMUP_NUM).map(i => {
