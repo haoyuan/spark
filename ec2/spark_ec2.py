@@ -70,13 +70,13 @@ def parse_args():
            "slaves across multiple (an additional $0.01/Gb for bandwidth" +
            "between zones applies)")
   parser.add_option("-a", "--ami", help="Amazon Machine Image ID to use")
-  parser.add_option("-v", "--spark-version", default="0.9.1",
+  parser.add_option("-v", "--spark-version", default="vNew",
       help="Version of Spark to use: 'X.Y.Z' or a specific git hash")
   parser.add_option("--spark-git-repo",
       default="https://github.com/apache/spark",
       help="Github repo from which to checkout supplied commit hash")
-  parser.add_option("--hadoop-major-version", default="1",
-      help="Major version of Hadoop (default: 1)")
+  parser.add_option("--hadoop-major-version", default="2",
+      help="Major version of Hadoop (default: 2)")
   parser.add_option("-D", metavar="[ADDRESS:]PORT", dest="proxy_port",
       help="Use SSH dynamic port forwarding to create a SOCKS proxy at " +
             "the given local address (for use with login)")
