@@ -369,7 +369,7 @@ class SparkContext(
       ): RDD[(K, V)] = {
     // Add necessary security credentials to the JobConf before broadcasting it.
     SparkHadoopUtil.get.addCredentials(conf)
-    new HadoopRDD(this, new SerializableWritable(conf), inputFormatClass, keyClass, valueClass, minSplits)
+    new HadoopRDD(this, conf, inputFormatClass, keyClass, valueClass, minSplits)
   }
 
   /** Get an RDD for a Hadoop file with an arbitrary InputFormat
@@ -387,7 +387,7 @@ class SparkContext(
       minSplits: Int = defaultMinSplits
       ): RDD[(K, V)] = {
     // A Hadoop configuration can be about 10 KB, which is pretty big, so broadcast it.
-    // val confBroadcast = broadcast(new SerializableWritable(hadoopConfiguration))
+    val confBroadcast = broadcast(new SerializableWritable(hadoopConfiguration))
     log.info("File Path is " + path);
     val setInputPathsFunc = (jobConf: JobConf) => {
       log.info("Set the path " + path);
@@ -395,8 +395,8 @@ class SparkContext(
     }
     new HadoopRDD(
       this,
-//      confBroadcast,
-      new SerializableWritable(hadoopConfiguration),
+      confBroadcast,
+//      new SerializableWritable(hadoopConfiguration),
       Some(setInputPathsFunc),
       inputFormatClass,
       keyClass,
