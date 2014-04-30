@@ -47,7 +47,8 @@ object TachyonRecompute {
       arraybuffer.append(args(i).toInt)
     }
     // rdd.tachyonRecompute(dependency, arraybuffer)
-    rdd.saveAsTextFileTachyonRecompute(args(1), args(2).toInt, arraybuffer)
+//    rdd.saveAsTextFileTachyonRecompute(args(1), args(2).toInt, arraybuffer)
+    rdd.saveAsObjectFileTachyonRecompute(args(1), args(2).toInt, arraybuffer)
 
     System.exit(1)
   }

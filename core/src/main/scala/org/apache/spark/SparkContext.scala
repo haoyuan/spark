@@ -18,6 +18,7 @@
 package org.apache.spark
 
 import java.io._
+import java.nio.ByteBuffer
 import java.net.URI
 import java.util.{UUID, Properties}
 import java.util.concurrent.atomic.AtomicInteger
@@ -567,7 +568,7 @@ class SparkContext(
       minSplits: Int = defaultMinSplits
       ): RDD[T] = {
     sequenceFile(path, classOf[NullWritable], classOf[BytesWritable], minSplits)
-      .flatMap(x => Utils.deserialize[Array[T]](x._2.getBytes))
+      .flatMap(x => SparkEnv.get.serializer.newInstance().deserialize[Array[T]](ByteBuffer.wrap(x._2.getBytes)))
   }
 
 

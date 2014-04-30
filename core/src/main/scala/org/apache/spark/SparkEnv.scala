@@ -149,7 +149,7 @@ object SparkEnv extends Logging {
     val serializerManager = new SerializerManager
 
     val serializer = serializerManager.setDefault(
-      conf.get("spark.serializer", "org.apache.spark.serializer.JavaSerializer"), conf)
+      conf.get("spark.serializer", "org.apache.spark.serializer.KryoSerializer"), conf)
 
     val closureSerializer = serializerManager.get(
       conf.get("spark.closure.serializer", "org.apache.spark.serializer.JavaSerializer"),

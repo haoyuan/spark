@@ -30,6 +30,8 @@ import org.apache.spark.broadcast.HttpBroadcast
 import org.apache.spark.scheduler.MapStatus
 import org.apache.spark.storage._
 import org.apache.spark.storage.{GetBlock, GotBlock, PutBlock}
+import org.apache.hadoop.mapred.TextInputFormat
+import org.apache.hadoop.io.LongWritable
 
 /**
  * A Spark serializer that uses the [[https://code.google.com/p/kryo/ Kryo serialization library]].
@@ -167,6 +169,21 @@ private[serializer] object KryoSerializer {
     classOf[MapStatus],
     classOf[BlockManagerId],
     classOf[Array[Byte]],
+
+    classOf[org.apache.hadoop.io.Text],
+    classOf[org.apache.hadoop.io.NullWritable],
+    classOf[org.apache.hadoop.io.BytesWritable],
+    classOf[TextInputFormat],
+    classOf[LongWritable],
+
+    classOf[Array[org.apache.hadoop.io.Text]],
+    classOf[Array[org.apache.hadoop.io.NullWritable]],
+    classOf[Array[org.apache.hadoop.io.BytesWritable]],
+    classOf[Array[TextInputFormat]],
+    classOf[Array[LongWritable]],
+
+    classOf[String],
+    classOf[Array[String]],
     (1 to 10).getClass,
     (1 until 10).getClass,
     (1L to 10L).getClass,
