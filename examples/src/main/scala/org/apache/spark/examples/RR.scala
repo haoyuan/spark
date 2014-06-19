@@ -24,6 +24,7 @@ import org.apache.spark.SparkContext._
 
 import tachyon.client.TachyonFS
 import tachyon.client.WriteType
+import tachyon.client.kv.KVStore
 
 /** Computes an approximation to pi */
 object RR {
@@ -32,22 +33,22 @@ object RR {
     val sc = new SparkContext(conf)
     val textFile = sc.textFile("README.md")
     textFile.count()
-    val wordcount = textFile.flatMap(_.split(" ")).map(s => (s, 1)).reduceByKey((a, b) => a + b).sortByKey(true)
+    val wordcount = textFile.flatMap(line => line.split(" ")).map(s => (s, 1)).reduceByKey((a, b) => a + b, 3).sortByKey(true)
     wordcount.take(2)
+
+    var store = KVStore.create("tachyon://localhost:19998/teststore")
 
     var s = wordcount.mapPartitionsWithIndex {
       case (k, iter) => {
         println(k)
-        var fs = TachyonFS.get("tachyon://localhost:19998")
-        val fid = fs.createFile("/data_3/" + k)
-        val file = fs.getFile(fid)
-        val os = file.getOutStream(WriteType.CACHE_THROUGH)
+        var store = KVStore.get("tachyon://localhost:19998/teststore")
+        var partition = store.createPartition(k);
         while (iter.hasNext) {
           val value = iter.next()
-          println(value)
-//          os.write(iter.next())
+          println(value._1 + " " + value._2)
+          partition.put(value._1, value._2)
         }
-        os.close()
+        partition.close()
         iter
       }
     }
