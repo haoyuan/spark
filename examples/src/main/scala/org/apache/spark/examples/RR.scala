@@ -17,14 +17,11 @@
 
 package org.apache.spark.examples
 
-import scala.math.random
-
 import org.apache.spark._
 import org.apache.spark.SparkContext._
 
-import tachyon.client.TachyonFS
-import tachyon.client.WriteType
 import tachyon.client.kv.KVStore
+import tachyon.client.kv.KVOutputFormat;
 
 /** Computes an approximation to pi */
 object RR {
@@ -33,16 +30,19 @@ object RR {
     val sc = new SparkContext(conf)
     val textFile = sc.textFile("README.md")
     textFile.count()
-    val wordcount = textFile.flatMap(line => line.split(" ")).map(s => (s, 1)).reduceByKey((a, b) => a + b, 3).sortByKey(true)
+    val wordcount = textFile.flatMap(line => line.split(" ")).map(s => (s, 2)).reduceByKey((a, b) => a + b, 5).sortByKey(true)
     wordcount.take(2)
 
-    var store = KVStore.create("tachyon://localhost:19998/teststore")
+    var kvs = KVStore.create("tachyon://localhost:19998/teststore6")
 
+    wordcount.saveAsHadoopFile[KVOutputFormat[String, Integer]]("tachyon://localhost:19998/teststore6");
+
+//    .saveAsHadoopFile[TextOutputFormat[NullWritable, Text]](path)
     var s = wordcount.mapPartitionsWithIndex {
       case (k, iter) => {
         println(k)
-        var store = KVStore.get("tachyon://localhost:19998/teststore")
-        var partition = store.createPartition(k);
+        var kvs = KVStore.get("tachyon://localhost:19998/teststore5")
+        var partition = kvs.createPartition(k);
         while (iter.hasNext) {
           val value = iter.next()
           println(value._1 + " " + value._2)
