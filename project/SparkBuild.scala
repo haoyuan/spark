@@ -358,7 +358,7 @@ object SparkBuild extends Build {
         "com.codahale.metrics"       % "metrics-graphite" % codahaleMetricsVersion,
         "com.twitter"               %% "chill"            % chillVersion excludeAll(excludeAsm),
         "com.twitter"                % "chill-java"       % chillVersion excludeAll(excludeAsm),
-        "org.tachyonproject"         % "tachyon-client"   % "0.5.0-SNAPSHOT" excludeAll(excludeHadoop, excludeCurator, excludeEclipseJetty, excludePowermock),
+        "org.tachyonproject"         % "tachyon-client"   % "0.6.0-SNAPSHOT" excludeAll(excludeHadoop, excludeCurator, excludeEclipseJetty, excludePowermock),
         "com.clearspring.analytics"  % "stream"           % "2.5.1" excludeAll(excludeFastutil),
         "org.spark-project"          % "pyrolite"         % "2.0.1",
         "net.sf.py4j"                % "py4j"             % "0.8.1"
