@@ -29,7 +29,11 @@ object CreateData {
     val conf = new SparkConf().setAppName("CreateData")
     val sc = new SparkContext(conf)
 
-    var partitions = 11
+
+import tachyon.TachyonURI
+import tachyon.r.sorted.ClientStore
+
+    var partitions = 100
     var numbers: List[Int] = Nil
     for(i <- 1 to partitions) {
       numbers = numbers ::: List(i)
@@ -38,15 +42,15 @@ object CreateData {
     val rdd = sc.parallelize(numbers, partitions)
     // rdd.map(number => {println(number); number}).count()
 
-    var uri: TachyonURI = new TachyonURI("tachyon://localhost:19998/store_" + partitions);
+    var uri: TachyonURI = new TachyonURI("tachyon://10.16.128.104:19998/store_50GB_100P");
     var store: ClientStore = ClientStore.createStore(uri);
 
     var s = rdd.map(number => {
       println(number)
-      var uri: TachyonURI = new TachyonURI("tachyon://localhost:19998/store_" + 11);
+      var uri: TachyonURI = new TachyonURI("tachyon://10.16.128.104:19998/store_50GB_100P");
       var store: ClientStore = ClientStore.getStore(uri);
       store.createPartition(number);
-      var max = 10000;
+      var max = 1000000;
       var prefix: Long = number * 10L * max;
       val str = "abcde" * 100 + "__________";
       for (k <- 1 to max) {
