@@ -536,7 +536,7 @@ class BlockManagerSuite extends FunSuite with Matchers with BeforeAndAfter
 
   test("tachyon storage") {
     // TODO Make the spark.test.tachyon.enable true after using tachyon 0.5.0 testing jar.
-    val tachyonUnitTestEnabled = conf.getBoolean("spark.test.tachyon.enable", false)
+    val tachyonUnitTestEnabled = conf.getBoolean("spark.test.tachyon.enable", true)
     if (tachyonUnitTestEnabled) {
       store = new BlockManager("<driver>", actorSystem, master, serializer, 1200, conf,
         securityMgr, mapOutputTracker)
@@ -871,7 +871,7 @@ class BlockManagerSuite extends FunSuite with Matchers with BeforeAndAfter
     assert(Arrays.equals(mappedAsArray, bytes))
     assert(Arrays.equals(notMappedAsArray, bytes))
   }
-  
+
   test("updated block statuses") {
     store = new BlockManager("<driver>", actorSystem, master, serializer, 1200, conf,
       securityMgr, mapOutputTracker)
