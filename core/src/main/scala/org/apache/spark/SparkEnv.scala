@@ -27,6 +27,8 @@ import scala.util.Properties
 import akka.actor._
 import com.google.common.collect.MapMaker
 
+import tachyon.client.TachyonFS
+
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.api.python.PythonWorkerFactory
 import org.apache.spark.broadcast.BroadcastManager
@@ -66,7 +68,8 @@ class SparkEnv (
     val sparkFilesDir: String,
     val metricsSystem: MetricsSystem,
     val shuffleMemoryManager: ShuffleMemoryManager,
-    val conf: SparkConf) extends Logging {
+    val conf: SparkConf,
+    val tachyonFS: TachyonFS) extends Logging {
 
   private val pythonWorkers = mutable.HashMap[(String, Map[String, String]), PythonWorkerFactory]()
 
@@ -186,7 +189,7 @@ object SparkEnv extends Logging {
     }
 
     val serializer = instantiateClassFromConf[Serializer](
-      "spark.serializer", "org.apache.spark.serializer.JavaSerializer")
+      "spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     logDebug(s"Using serializer: ${serializer.getClass}")
 
     val closureSerializer = instantiateClassFromConf[Serializer](
@@ -269,6 +272,13 @@ object SparkEnv extends Logging {
         "levels using the RDD.persist() method instead.")
     }
 
+    val tachyonAddress = conf.get("spark.tachyonStore.url", "tachyon://localhost:19998")
+    var tachyonFS: TachyonFS = null
+    if (tachyonAddress != null) {
+      tachyonFS = TachyonFS.get(tachyonAddress)
+      logWarning("TachyonClient has connected to " + tachyonAddress)
+    }
+
     new SparkEnv(
       executorId,
       actorSystem,
@@ -285,7 +295,8 @@ object SparkEnv extends Logging {
       sparkFilesDir,
       metricsSystem,
       shuffleMemoryManager,
-      conf)
+      conf,
+      tachyonFS)
   }
 
   /**
