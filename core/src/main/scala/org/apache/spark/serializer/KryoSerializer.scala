@@ -201,7 +201,22 @@ private[serializer] object KryoSerializer {
     classOf[BlockManagerId],
     classOf[Array[Byte]],
     classOf[BoundedPriorityQueue[_]],
-    classOf[SparkConf]
+    classOf[SparkConf],
+
+    classOf[org.apache.hadoop.io.Text],
+    classOf[org.apache.hadoop.io.NullWritable],
+    classOf[org.apache.hadoop.io.BytesWritable],
+    classOf[TextInputFormat],
+    classOf[LongWritable],
+
+    classOf[Array[org.apache.hadoop.io.Text]],
+    classOf[Array[org.apache.hadoop.io.NullWritable]],
+    classOf[Array[org.apache.hadoop.io.BytesWritable]],
+    classOf[Array[TextInputFormat]],
+    classOf[Array[LongWritable]],
+
+    classOf[String],
+    classOf[Array[String]]
   )
 }
 

@@ -72,6 +72,8 @@ class NewHadoopRDD[K, V](
   with SparkHadoopMapReduceUtil
   with Logging {
 
+  log.info("We are in NewHadoopRDD.")
+
   // A Hadoop Configuration can be about 10 KB, which is pretty big, so broadcast it
   private val confBroadcast = sc.broadcast(new SerializableWritable(conf))
   // private val serializableConf = new SerializableWritable(conf)

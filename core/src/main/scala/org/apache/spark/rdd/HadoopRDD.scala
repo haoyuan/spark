@@ -83,9 +83,9 @@ private[spark] class HadoopPartition(rddId: Int, idx: Int, @transient s: InputSp
  * [[org.apache.spark.SparkContext.hadoopRDD()]]
  *
  * @param sc The SparkContext to associate the RDD with.
- * @param broadcastedConf A general Hadoop Configuration, or a subclass of it. If the enclosed
- *     variabe references an instance of JobConf, then that JobConf will be used for the Hadoop job.
- *     Otherwise, a new JobConf will be created on each slave using the enclosed Configuration.
+ // * @param broadcastedConf A general Hadoop Configuration, or a subclass of it. If the enclosed
+ // *     variabe references an instance of JobConf, then that JobConf will be used for the Hadoop job.
+ // *     Otherwise, a new JobConf will be created on each slave using the enclosed Configuration.
  * @param initLocalJobConfFuncOpt Optional closure used to initialize any JobConf that HadoopRDD
  *     creates.
  * @param inputFormatClass Storage format of the data to be read.
@@ -96,13 +96,16 @@ private[spark] class HadoopPartition(rddId: Int, idx: Int, @transient s: InputSp
 @DeveloperApi
 class HadoopRDD[K, V](
     sc: SparkContext,
-    broadcastedConf: Broadcast[SerializableWritable[Configuration]],
+    // broadcastedConf: Broadcast[SerializableWritable[Configuration]],
+    serConf: SerializableWritable[Configuration],
     initLocalJobConfFuncOpt: Option[JobConf => Unit],
     inputFormatClass: Class[_ <: InputFormat[K, V]],
     keyClass: Class[K],
     valueClass: Class[V],
     minPartitions: Int)
   extends RDD[(K, V)](sc, Nil) with Logging {
+
+  log.info("We are in HadoopRDD.")
 
   def this(
       sc: SparkContext,
@@ -113,8 +116,9 @@ class HadoopRDD[K, V](
       minPartitions: Int) = {
     this(
       sc,
-      sc.broadcast(new SerializableWritable(conf))
-        .asInstanceOf[Broadcast[SerializableWritable[Configuration]]],
+      // sc.broadcast(new SerializableWritable(conf))
+      //   .asInstanceOf[Broadcast[SerializableWritable[Configuration]]],
+      new SerializableWritable(conf).asInstanceOf[SerializableWritable[Configuration]],
       None /* initLocalJobConfFuncOpt */,
       inputFormatClass,
       keyClass,
@@ -131,7 +135,7 @@ class HadoopRDD[K, V](
 
   // Returns a JobConf that will be used on slaves to obtain input splits for Hadoop reads.
   protected def getJobConf(): JobConf = {
-    val conf: Configuration = broadcastedConf.value.value
+    val conf: Configuration = serConf.value // broadcastedConf.value.value
     if (conf.isInstanceOf[JobConf]) {
       // A user-broadcasted JobConf was provided to the HadoopRDD, so always use it.
       conf.asInstanceOf[JobConf]
@@ -145,7 +149,7 @@ class HadoopRDD[K, V](
       // The caching helps minimize GC, since a JobConf can contain ~10KB of temporary objects.
       // Synchronize to prevent ConcurrentModificationException (Spark-1097, Hadoop-10456).
       HadoopRDD.CONFIGURATION_INSTANTIATION_LOCK.synchronized {
-        val newJobConf = new JobConf(conf)
+        val newJobConf = new JobConf(serConf.value) // conf)
         initLocalJobConfFuncOpt.map(f => f(newJobConf))
         HadoopRDD.putCachedMetadata(jobConfCacheKey, newJobConf)
         newJobConf
@@ -176,6 +180,7 @@ class HadoopRDD[K, V](
     if (inputFormat.isInstanceOf[Configurable]) {
       inputFormat.asInstanceOf[Configurable].setConf(jobConf)
     }
+    log.info(jobConf.toString);
     val inputSplits = inputFormat.getSplits(jobConf, minPartitions)
     val array = new Array[Partition](inputSplits.size)
     for (i <- 0 until inputSplits.size) {
@@ -245,7 +250,25 @@ class HadoopRDD[K, V](
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
     // TODO: Filtering out "localhost" in case of file:// URLs
-    val hadoopSplit = split.asInstanceOf[HadoopPartition]
+    // val hadoopSplit = split.asInstanceOf[HadoopPartition]
+
+    var tSplit = split
+    if (System.getProperty("spark.tachyon.recompute", "false").toBoolean) {
+      val conf = new JobConf(serConf.value)
+      SparkHadoopUtil.get.addCredentials(conf)
+      val inputFormat = getInputFormat(conf)
+      if (inputFormat.isInstanceOf[Configurable]) {
+        inputFormat.asInstanceOf[Configurable].setConf(conf)
+      }
+      val inputSplits = inputFormat.getSplits(conf, minSplits)
+      val array = new Array[Partition](inputSplits.size)
+      val hadoopSplit = split.asInstanceOf[HadoopPartition]
+      tSplit = new HadoopPartition(id, hadoopSplit.index, inputSplits(hadoopSplit.index))
+    } else {
+      println("Trying to get locations of the partition in normal computation " + split)
+    }
+    val hadoopSplit = tSplit.asInstanceOf[HadoopPartition]
+
     hadoopSplit.inputSplit.value.getLocations.filter(_ != "localhost")
   }
 

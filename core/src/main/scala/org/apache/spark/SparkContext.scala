@@ -20,6 +20,7 @@ package org.apache.spark
 import scala.language.implicitConversions
 
 import java.io._
+import java.nio.ByteBuffer
 import java.net.URI
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.{Properties, UUID}
@@ -560,7 +561,8 @@ class SparkContext(config: SparkConf) extends Logging {
     val setInputPathsFunc = (jobConf: JobConf) => FileInputFormat.setInputPaths(jobConf, path)
     new HadoopRDD(
       this,
-      confBroadcast,
+      // confBroadcast,
+      new SerializableWritable(hadoopConfiguration),
       Some(setInputPathsFunc),
       inputFormatClass,
       keyClass,
@@ -732,7 +734,8 @@ class SparkContext(config: SparkConf) extends Logging {
       minPartitions: Int = defaultMinPartitions
       ): RDD[T] = {
     sequenceFile(path, classOf[NullWritable], classOf[BytesWritable], minPartitions)
-      .flatMap(x => Utils.deserialize[Array[T]](x._2.getBytes, Utils.getContextOrSparkClassLoader))
+      // .flatMap(x => Utils.deserialize[Array[T]](x._2.getBytes, Utils.getContextOrSparkClassLoader))
+      .flatMap(x => SparkEnv.get.serializer.newInstance().deserialize[Array[T]](ByteBuffer.wrap(x._2.getBytes)))
   }
 
   protected[spark] def checkpointFile[T: ClassTag](
